@@ -3,8 +3,8 @@
 ENTRY(add2)
 push %ebp
 mov %esp,%ebp
-mov 0x8(%ebp),%edx
-mov 0xc(%ebp),%eax
+mov 8(%ebp),%edx
+mov 12(%ebp),%eax
 add %edx,%eax
 pop %ebp
 ret

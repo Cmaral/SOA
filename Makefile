@@ -81,8 +81,11 @@ system.o:system.c $(INCLUDEDIR)/hardware.h system.lds $(SYSOBJ) $(INCLUDEDIR)/se
 system: system.o system.lds $(SYSOBJ)
 	$(LD) $(LINKFLAGS) $(SYSLDFLAGS) -o $@ $< $(SYSOBJ) $(LIBZEOS) 
 
-user: user.o user.lds suma.s $(USROBJ) 
-	$(LD) $(LINKFLAGS) $(USRLDFLAGS) -o $@ $< $(USROBJ)
+user: user.o user.lds suma.o $(USROBJ) 
+	$(LD) $(LINKFLAGS) $(USRLDFLAGS) -s -o $@ $< $(USROBJ)
+
+suma.o: suma.s
+	$(AS86) -o $@ $<
 
 suma.s: suma.S $(INCLUDEDIR)/asm.h
 	$(CPP) $(ASMFLAGS) -o $@ $<

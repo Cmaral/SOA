@@ -1,6 +1,6 @@
 #include <libc.h>
 
-int add2(int par1, int par2){}
+int add2(int par1, int par2);
 
 char buff[24];
 
