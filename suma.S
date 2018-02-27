@@ -6,4 +6,6 @@ mov %esp,%ebp; \
 mov 8(%ebp),%edx; \
 mov 12(%ebp),%eax; \
 add %edx,%eax; \
-pop %ebp,
+pop %ebp; \
+ret; \
+nop
