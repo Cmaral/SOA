@@ -20,7 +20,7 @@ INCLUDEDIR = include
 # Define here flags to compile the tests if needed
 JP =
 
-CFLAGS = -O0  -g $(JP) -fno-omit-frame-pointer -ffreestanding -Wall -I$(INCLUDEDIR)
+CFLAGS = -O2  -g $(JP) -fno-omit-frame-pointer -ffreestanding -Wall -I$(INCLUDEDIR)
 ASMFLAGS = -I$(INCLUDEDIR)
 SYSLDFLAGS = -T system.lds
 USRLDFLAGS = -T user.lds
@@ -31,7 +31,7 @@ SYSOBJ = interrupt.o entry.o sys_call_table.o io.o sched.o sys.o mm.o devices.o 
 LIBZEOS = -L . -l zeos
 
 #add to USROBJ the object files required to complete the user program
-USROBJ = libc.o # libjp.a
+USROBJ = libc.o suma.o # libjp.a
 
 all:zeos.bin
 
@@ -81,11 +81,8 @@ system.o:system.c $(INCLUDEDIR)/hardware.h system.lds $(SYSOBJ) $(INCLUDEDIR)/se
 system: system.o system.lds $(SYSOBJ)
 	$(LD) $(LINKFLAGS) $(SYSLDFLAGS) -o $@ $< $(SYSOBJ) $(LIBZEOS) 
 
-user: user.o user.lds suma.o $(USROBJ) 
+user: user.o user.lds $(USROBJ) 
 	$(LD) $(LINKFLAGS) $(USRLDFLAGS) -s -o $@ $< $(USROBJ)
-
-suma.o: suma.s
-	$(AS86) -o $@ $<
 
 suma.s: suma.S $(INCLUDEDIR)/asm.h
 	$(CPP) $(ASMFLAGS) -o $@ $<
