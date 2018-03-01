@@ -31,7 +31,7 @@ SYSOBJ = interrupt.o entry.o sys_call_table.o io.o sched.o sys.o mm.o devices.o 
 LIBZEOS = -L . -l zeos
 
 #add to USROBJ the object files required to complete the user program
-USROBJ = libc.o suma.o # libjp.a
+USROBJ = libc.o suma.o gettime.o write_zeos_ticks.o # libjp.a
 
 all:zeos.bin
 
@@ -87,6 +87,11 @@ user: user.o user.lds $(USROBJ)
 suma.s: suma.S $(INCLUDEDIR)/asm.h
 	$(CPP) $(ASMFLAGS) -o $@ $<
 
+gettime.s: gettime.S $(INCLUDEDIR)/asm.h
+	$(CPP) $(ASMFLAGS) -o $@ $<
+
+write_zeos_ticks.s: write_zeos_ticks.S $(INCLUDEDIR)/asm.h
+	$(CPP) $(ASMFLAGS) -o $@ $<
 clean:
 	rm -f *.o *.s bochsout.txt parport.out system.out system bootsect zeos.bin user user.out *~ build 
 
