@@ -17,6 +17,7 @@ int zeos_ticks;
 
 void kbd_handler();
 void clock_handler();
+void sys_call_handler();
 
 
 char char_map[] =
