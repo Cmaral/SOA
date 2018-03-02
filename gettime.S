@@ -2,7 +2,7 @@
 
 ENTRY(gettime)
         movl $10, %eax
-        int 0x80
+        int $0x80
         cmpl $0, %eax
         jg fi
         imull $-1, %eax
