@@ -42,5 +42,32 @@ int strlen(char *a)
   return i;
 }
 
+int gettime() {
+        __asm__("movl $10, %%eax;"
+            "int $0x80;"
+            :"=a"(errno)    
+            :   
+            :"%eax"     
+        );
+        
+        if (errno == 0) return errno;
+        return (-1*errno);
+}
+
+int write_zeos_ticks(int valor) {
+        __asm__("movl $9, %%eax;"
+            "movl %1, %%ebx;"
+            "int $0x80;"
+            :"=a"(errno)    
+            :"r"(valor)     
+            :"%eax"     
+        );  
+        
+        if (errno == 0) return errno;
+        return (-1*errno);
+}
+
+
+
 
 
