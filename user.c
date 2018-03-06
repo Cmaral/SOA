@@ -2,6 +2,9 @@
 
 int add2(int par1, int par2);
 
+int gettime();
+void write_zeos_ticks();
+
 char buff[24];
 
 int pid;
