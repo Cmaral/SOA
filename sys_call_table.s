@@ -19,7 +19,7 @@
  .long sys_ni_syscall
  .long sys_ni_syscall
  .long sys_ni_syscall
- .long sys_write_zeos_ticks
+ .long sys_ni_syscall
  .long sys_gettime
-.global MAX_SYSCALL
-MAX_SYSCALL = (. - sys_call_table)/10
+.globl MAX_SYSCALL
+MAX_SYSCALL = 10
