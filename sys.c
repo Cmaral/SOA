@@ -56,7 +56,7 @@ int sys_write(int fd, char* buffer, int size) {
     if ((check_fd(fd, ESCRIPTURA)) != 0) return -1;
     if (buffer == NULL) return -1;
     if (size < 0) return -1;
-    sys_write_console (buffer, size); //Falla amb el size!!!!
+    sys_write_console (buffer, size);
     return 0;
 }
 
