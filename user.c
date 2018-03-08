@@ -37,7 +37,7 @@ int __attribute__ ((__section__(".text.main")))
      /* __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) ); */
    //gettime();
    char* buffer = "Hola que tal";
-   write(1, buffer, 4);
+   write(1, buffer, 12);
    while (1);
    return 0;
 }
