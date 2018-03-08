@@ -53,11 +53,12 @@ int sys_gettime() {
 }
 
 int sys_write(int fd, char* buffer, int size) {
+    int bytes_escrits = 0;
     if ((check_fd(fd, ESCRIPTURA)) != 0) return -1;
     if (buffer == NULL) return -1;
     if (size < 0) return -1;
-    sys_write_console (buffer, size);
-    return 0;
+    bytes_escrits += sys_write_console (buffer, size);
+    return bytes_escrits;
 }
 
 
