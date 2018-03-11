@@ -6,6 +6,8 @@
 
 #include <types.h>
 
+#include <errno.h>
+
 int errno;
 
 void itoa(int a, char *b)
@@ -41,6 +43,12 @@ int strlen(char *a)
   while (a[i]!=0) i++;
   
   return i;
+}
+
+void perror() {
+  char * buffer = sys_errlist[errno];
+  write(1, buffer, strlen(buffer));
+
 }
 
 
