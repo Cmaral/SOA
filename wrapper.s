@@ -25,9 +25,9 @@ fi:
 .globl write; .type write, @function; .align 0; write:
         push %ebp
         mov %esp, %ebp
-        movl 16(%ebp), %ebx
+        movl 8(%ebp), %ebx
         movl 12(%ebp), %ecx
-        movl 8(%ebp), %edx
+        movl 16(%ebp), %edx
         movl $4, %eax
         int $0x80
         cmpl $0, %eax
