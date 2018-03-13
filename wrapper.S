@@ -18,6 +18,9 @@ fi:
 ENTRY(write)
         push %ebp
         mov %esp, %ebp
+        pushl %ebx
+        pushl %ecx
+        pushl %edx
         movl 8(%ebp), %ebx
         movl 12(%ebp), %ecx
         movl 16(%ebp), %edx
@@ -29,5 +32,8 @@ ENTRY(write)
         movl %eax, errno
         movl $-1, %eax
 fi2:
+        popl %edx
+        popl %ecx
+        popl %ebx
         pop %ebp
         ret

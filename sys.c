@@ -56,10 +56,20 @@ int sys_gettime() {
 
 int sys_write(int fd, char* buffer, int size) {
     int bytes_escrits = 0;
-    if ((check_fd(fd, ESCRIPTURA)) != 0) return -1;
-    if (buffer == NULL) return -1;
+    char buffer_sys[4096];
+    int error = check_fd(fd, ESCRIPTURA);
+    if (error != 0) return error;
     if (size < 0) return -1;
-    bytes_escrits += sys_write_console (buffer, size);
+    if (buffer == NULL) return -105;
+    while (size >= 4096) {
+        copy_from_user(buffer, buffer_sys, 4096);
+        buffer += 4096;
+        bytes_escrits += sys_write_console(buffer_sys, 4096);
+        size -= 4096;
+    }
+    char buffer_sys_b[size];
+    copy_from_user(buffer, buffer_sys_b, size);
+    bytes_escrits += sys_write_console(buffer_sys_b, size);
     return bytes_escrits;
 }
 
