@@ -14,6 +14,7 @@ union task_union protected_tasks[NR_TASKS+2]
   __attribute__((__section__(".data.task")));
 
 union task_union *task = &protected_tasks[1]; /* == union task_union task[NR_TASKS] */
+struct task_struct *idle_task;
 
 #if 0
 struct task_struct *list_head_to_task_struct(struct list_head *l)
@@ -63,6 +64,8 @@ void cpu_idle(void)
 
 void init_idle (void)
 {
+    idle_task = list_head_to_task_struct(&freequeue);
+    list_del(freequeue.prev);
 
 }
 
@@ -76,9 +79,9 @@ void init_sched(){
 }
 
 void init_lists(){
-	INIT_LIST_HEAD(freequeue);
-	INIT_LIST_HEAD(readyqueue);
-
+    INIT_LIST_HEAD(&freequeue);
+    INIT_LIST_HEAD(&readyqueue);
+    list_add_tail(&(task->task.list), &freequeue);
 }
 
 struct task_struct* current()
