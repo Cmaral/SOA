@@ -66,11 +66,21 @@ void init_idle (void)
 {
     idle_task = list_head_to_task_struct(&freequeue);
     list_del(freequeue.prev);
-
+    idle_task->PID = 0;
+    allocate_DIR(&idle_task);
+    task_switch(&idle_task);
+    cpu_idle();
 }
 
 void init_task1(void)
 {
+    struct task_struct init_task = list_head_to_task_struct(&freequeue);
+    list_del(freequeue.prev);
+    init_task->PID = 1;
+    allocate_DIR(&init_task);
+    set_user_pages(&init_task);
+    //COM MOURE TSS PER APUNTAR??
+    
 }
 
 
@@ -81,7 +91,7 @@ void init_sched(){
 void init_lists(){
     INIT_LIST_HEAD(&freequeue);
     INIT_LIST_HEAD(&readyqueue);
-    list_add_tail(&(task->task.list), &freequeue);
+    list_add_tail(&(task->task.list), &freequeue); //COM INICIALITZAR MOLTES TASKES?
 }
 
 struct task_struct* current()
