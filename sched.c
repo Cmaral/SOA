@@ -68,10 +68,11 @@ void cpu_idle(void)
 /*Initializes idle process */
 void init_idle (void)
 {
+  
     struct list_head *idle_task_head;
     idle_task_head = list_first(&freequeue); //Agafem el primer disponible
     list_del(idle_task_head); // Eliminem de la freequeue
-
+    
     struct task_struct *idle_task_struct;
     idle_task_struct = list_head_to_task_struct(idle_task_head); //Agafem task_struct
     
@@ -80,8 +81,7 @@ void init_idle (void)
     
     
     idle_task_struct->PID = 0; //Assignem PID 0
-    allocate_DIR(&idle_task); //Alloquem nou directori
-
+    allocate_DIR(&idle_task_struct); //Alloquem nou directori
     
     idle_task = idle_task_struct; //Inicialitzem idle_task
 
@@ -106,13 +106,22 @@ void init_task1(void)
 */
 
 void init_sched(){
+    //Inicialitza freequeue
+    INIT_LIST_HEAD(&freequeue);
+    int i;
+    for (i=0; i<NR_TASKS;i++){
+      list_add(&(task[i].task.list), &freequeue); //Inicialitza freequeue amb tasks
+    }
 
+    //Inicialitza readyqueue
+    INIT_LIST_HEAD(&readyqueue);
 }
 
 void init_lists(){
-    INIT_LIST_HEAD(&freequeue);
+    /*INIT_LIST_HEAD(&freequeue);
     INIT_LIST_HEAD(&readyqueue);
     list_add_tail(&(task->task.list), &freequeue); //COM INICIALITZAR MOLTES TASKES?
+    */
 }
 
 struct task_struct* current()
