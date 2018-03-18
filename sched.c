@@ -92,18 +92,25 @@ void init_idle (void)
 
 }
 
-/*
+
 void init_task1(void)
 {
-    struct task_struct init_task = list_first(&freequeue);
-    list_del(init_task);
-    init_task->PID = 1;
-    allocate_DIR(&init_task);
-    set_user_pages(&init_task);
-    //COM MOURE TSS PER APUNTAR??
+    struct list_head *init_task_head;
+    init_task_head = list_first(&freequeue);
+    list_del(init_task_head);
     
+    struct task_struct *init_task_struct;
+    init_task_struct = list_head_to_task_struct(init_task_head);
+    
+    union init_task_union *init_task_union;
+    init_task_union = (union task_union *)init_task_struct;
+    
+    init_task_struct->PID = 1;
+    allocate_DIR(&init_task_struct);
+    set_user_pages(&init_task_struct);
+    //tss = &init_task_union->stack[KERNEL_STACK_SIZE-1]; COM DONAR VALOR A TSS
+    set_cr3(&(init_task_struct->dir_pages_baseAddr));
 }
-*/
 
 void init_sched(){
     //Inicialitza freequeue
