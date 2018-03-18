@@ -16,16 +16,17 @@ union task_union protected_tasks[NR_TASKS+2]
 union task_union *task = &protected_tasks[1]; /* == union task_union task[NR_TASKS] */
 struct task_struct *idle_task;
 
-#if 0
+
 struct task_struct *list_head_to_task_struct(struct list_head *l)
 {
   return list_entry( l, struct task_struct, list);
 }
-#endif
+
 
 extern struct list_head blocked;
 struct list_head freequeue;
 struct list_head readyqueue;
+struct task_struct *idle_task;
 
 
 /* get_DIR - Returns the Page Directory address for task 't' */
@@ -62,16 +63,27 @@ void cpu_idle(void)
 	}
 }
 
+
+
+/*Initializes idle process */
 void init_idle (void)
 {
-    idle_task = list_head_to_task_struct(&freequeue);
-    list_del(freequeue.prev);
-    idle_task->PID = 0;
-    allocate_DIR(&idle_task);
-    task_switch(&idle_task);
-    cpu_idle();
+    struct list_head *idle_task_head;
+    idle_task_head = list_first(&freequeue); //Agafem el primer disponible
+    list_del(idle_task_head); // Eliminem de la freequeue
+    idle_task = list_head_to_task_struct(idle_task_head); //Agafem task_struct, inicialitza idle_task
+    idle_task->PID = 0; //Assignem PID 0
+    allocate_DIR(idle_task); //Alloquem nou directori
+
+    union task_union *idle_task_union;
+    idle_task_union = (union task_union *)idle_task; //Type cast a task_union
+    //Per fer el context switch:
+    idle_task_union->stack[KERNEL_STACK_SIZE-1]=&cpu_idle; //Apunta a cpu_idle
+    idle_task_union->stack[KERNEL_STACK_SIZE-2]=0; //
+    idle_task_union->task.kernel_esp = &idle_task_union->stack[KERNEL_STACK_SIZE-2]; //Per retornar
 }
 
+/*
 void init_task1(void)
 {
     struct task_struct init_task = list_head_to_task_struct(&freequeue);
@@ -82,7 +94,7 @@ void init_task1(void)
     //COM MOURE TSS PER APUNTAR??
     
 }
-
+*/
 
 void init_sched(){
 
