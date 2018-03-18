@@ -95,8 +95,8 @@ void init_idle (void)
 /*
 void init_task1(void)
 {
-    struct task_struct init_task = list_head_to_task_struct(&freequeue);
-    list_del(freequeue.prev);
+    struct task_struct init_task = list_first(&freequeue);
+    list_del(init_task);
     init_task->PID = 1;
     allocate_DIR(&init_task);
     set_user_pages(&init_task);
