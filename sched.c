@@ -71,16 +71,25 @@ void init_idle (void)
     struct list_head *idle_task_head;
     idle_task_head = list_first(&freequeue); //Agafem el primer disponible
     list_del(idle_task_head); // Eliminem de la freequeue
-    idle_task = list_head_to_task_struct(idle_task_head); //Agafem task_struct, inicialitza idle_task
-    idle_task->PID = 0; //Assignem PID 0
-    allocate_DIR(idle_task); //Alloquem nou directori
 
+    struct task_struct *idle_task_struct;
+    idle_task_struct = list_head_to_task_struct(idle_task_head); //Agafem task_struct
+    
     union task_union *idle_task_union;
-    idle_task_union = (union task_union *)idle_task; //Type cast a task_union
-    //Per fer el context switch:
+    idle_task_union = (union task_union *)idle_task_struct; //Type cast a task_union
+    
+    
+    idle_task_struct->PID = 0; //Assignem PID 0
+    allocate_DIR(&idle_task); //Alloquem nou directori
+
+    
+    idle_task = idle_task_struct; //Inicialitzem idle_task
+
+//Per fer el context switch:
     idle_task_union->stack[KERNEL_STACK_SIZE-1]=&cpu_idle; //Apunta a cpu_idle
     idle_task_union->stack[KERNEL_STACK_SIZE-2]=0; //
     idle_task_union->task.kernel_esp = &idle_task_union->stack[KERNEL_STACK_SIZE-2]; //Per retornar
+
 }
 
 /*
