@@ -81,7 +81,7 @@ void init_idle (void)
     
     
     idle_task_struct->PID = 0; //Assignem PID 0
-    allocate_DIR(&idle_task_struct); //Alloquem nou directori
+    allocate_DIR(idle_task_struct); //Alloquem nou directori
     
     idle_task = idle_task_struct; //Inicialitzem idle_task
 
@@ -106,10 +106,17 @@ void init_task1(void)
     init_task_union = (union task_union *)init_task_struct;
     
     init_task_struct->PID = 1;
-    allocate_DIR(&init_task_struct);
-    set_user_pages(&init_task_struct);
-    //tss = &init_task_union->stack[KERNEL_STACK_SIZE-1]; COM DONAR VALOR A TSS
-    set_cr3(&(init_task_struct->dir_pages_baseAddr));
+    allocate_DIR(init_task_struct);
+    set_user_pages(init_task_struct);
+    /*
+    init_task_union->stack[KERNEL_STACK_SIZE-1] = __USER_DS;
+    init_task_union->stack[KERNEL_STACK_SIZE-2] = USER_ESP;
+    init_task_union->stack[KERNEL_STACK_SIZE-3] = INITIAL_EFLAGS;
+    init_task_union->stack[KERNEL_STACK_SIZE-4] = __USER_CS;
+    init_task_union->stack[KERNEL_STACK_SIZE-5] = 0x100000
+    
+    tss.esp0 = &init_task_union->stack[KERNEL_STACK_SIZE];*/
+    set_cr3((init_task_struct->dir_pages_baseAddr));
 }
 
 void init_sched(){
