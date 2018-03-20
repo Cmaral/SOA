@@ -102,20 +102,14 @@ void init_task1(void)
     struct task_struct *init_task_struct;
     init_task_struct = list_head_to_task_struct(init_task_head);
     
-    union init_task_union *init_task_union;
+    union task_union *init_task_union;
     init_task_union = (union task_union *)init_task_struct;
     
     init_task_struct->PID = 1;
     allocate_DIR(init_task_struct);
     set_user_pages(init_task_struct);
-    /*
-    init_task_union->stack[KERNEL_STACK_SIZE-1] = __USER_DS;
-    init_task_union->stack[KERNEL_STACK_SIZE-2] = USER_ESP;
-    init_task_union->stack[KERNEL_STACK_SIZE-3] = INITIAL_EFLAGS;
-    init_task_union->stack[KERNEL_STACK_SIZE-4] = __USER_CS;
-    init_task_union->stack[KERNEL_STACK_SIZE-5] = 0x100000
     
-    tss.esp0 = &init_task_union->stack[KERNEL_STACK_SIZE];*/
+    tss.esp0 = &init_task_union->stack[KERNEL_STACK_SIZE];
     set_cr3((init_task_struct->dir_pages_baseAddr));
 }
 
@@ -131,12 +125,14 @@ void init_sched(){
     INIT_LIST_HEAD(&readyqueue);
 }
 
+/*
 void init_lists(){
-    /*INIT_LIST_HEAD(&freequeue);
+    /NIT_LIST_HEAD(&freequeue);
     INIT_LIST_HEAD(&readyqueue);
     list_add_tail(&(task->task.list), &freequeue); //COM INICIALITZAR MOLTES TASKES?
-    */
+    
 }
+*/
 
 struct task_struct* current()
 {
@@ -149,3 +145,9 @@ struct task_struct* current()
   return (struct task_struct*)(ret_value&0xfffff000);
 }
 
+
+void inner_task_switch(union task_union * new) {
+  tss.esp0 = new->task.kernel_esp;
+  set_cr3(new->task.dir_pages_baseAddr);
+  assem_inner_task_switch(new->task.kernel_esp, &current()->kernel_esp);
+}
