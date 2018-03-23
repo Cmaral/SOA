@@ -19,6 +19,7 @@
 #define ESCRIPTURA 1
 
 extern zeos_ticks;
+extern struct list_head freequeue;
 
 int check_fd(int fd, int permissions)
 {
@@ -40,8 +41,29 @@ int sys_getpid()
 int sys_fork()
 {
   int PID=-1;
-
-  // creates the child process
+  
+  if (list_empty(&freequeue)) return -1;
+  else {
+        struct list_head *fork_task_head;
+        fork_task_head = list_first(&freequeue);
+        list_del(fork_task_head);
+        
+        struct task_struct *fork_task_struct;
+        fork_task_struct = list_head_to_task_struct(fork_task_head);
+        
+        union task_union *fork_task_union;
+        fork_task_union = (union task_union *)fork_task_struct;
+        
+        union task_union *padre_task_union;
+        padre_task_union = (union task_union *) current();
+        
+        copy_data(&padre_task_union->stack[KERNEL_STACK_SIZE-1024], &fork_task_union->stack[KERNEL_STACK_SIZE-1024], 4096);
+        
+        allocate_DIR(fork_task_struct);
+        
+        
+        
+  }
   
   return PID;
 }
