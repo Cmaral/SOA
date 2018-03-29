@@ -44,3 +44,31 @@ fi2:
         popl %ebx
         pop %ebp
         ret
+
+.globl getpid; .type getpid, @function; .align 0; getpid:
+        push %ebp
+        movl %esp, %ebp
+        movl $20, %eax
+        int $0x80
+        cmpl $0, %eax
+        jge fi3
+        imull $-1, %eax
+        movl %eax, errno
+        movl $-1, %eax
+fi3:
+        pop %ebp
+        ret
+
+.globl fork; .type fork, @function; .align 0; fork:
+        push %ebp
+        movl %esp, %ebp
+        movl $2, %eax
+        int $0x80
+        cmpl $0, %eax
+        jge fi4
+        imull $-1, %eax
+        movl %eax, errno
+        movl $-1, %eax
+fi4:
+        pop %ebp
+        ret

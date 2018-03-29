@@ -19,7 +19,6 @@
 #define ESCRIPTURA 1
 
 extern zeos_ticks;
-extern struct list_head freequeue;
 
 int check_fd(int fd, int permissions)
 {
@@ -38,34 +37,119 @@ int sys_getpid()
 	return current()->PID;
 }
 
+int ret_from_fork(){
+  return 0;
+}
+
+
 int sys_fork()
 {
-  int PID=-1;
-  
+  // Get new free task_struct, error if there is no space
   if (list_empty(&freequeue)) return -1;
-  else {
-        struct list_head *fork_task_head;
-        fork_task_head = list_first(&freequeue);
-        list_del(fork_task_head);
-        
-        struct task_struct *fork_task_struct;
-        fork_task_struct = list_head_to_task_struct(fork_task_head);
-        
-        union task_union *fork_task_union;
-        fork_task_union = (union task_union *)fork_task_struct;
-        
-        union task_union *padre_task_union;
-        padre_task_union = (union task_union *) current();
-        
-        copy_data(&padre_task_union->stack[KERNEL_STACK_SIZE-1024], &fork_task_union->stack[KERNEL_STACK_SIZE-1024], 4096);
-        
-        allocate_DIR(fork_task_struct);
-        
-        
-        
+
+    // If task_struct available, continue
+  struct list_head *fork_list_head;
+  fork_list_head = list_first(&freequeue);
+  list_del(fork_list_head);
+
+  // Copy parent task_union to child
+  union task_union *parent_task_union;
+  parent_task_union = (union task_union *) current();
+
+  union task_union *fork_task_union;
+  struct task_struct *fork_task_struct;
+  fork_task_struct = list_head_to_task_struct(fork_list_head);
+
+  fork_task_union = (union task_union *)fork_task_struct;
+
+  copy_data(parent_task_union, fork_task_union, sizeof(union task_union)); // Copy parent->child
+
+  // Initialize new directory
+
+  allocate_DIR(fork_task_struct);
+
+  // Map logical pages
+
+  int fork_frames[NUM_PAG_DATA]; // Data pages per task
+  /* Allocate frames
+  Check if there are enough available frames 
+  Free allocated frames if there aren't enough */
+
+ 
+  for (int i=0; i<NUM_PAG_DATA; i++) {
+    fork_frames[i] = alloc_frame();
+    if (fork_frames[i] == -1) {
+      // Error, not enough frames
+      // Free allocated frames
+      for (int j=0; j<i; j++) free_frame(fork_frames[j]);
+      return -1;
+    }
   }
-  
-  return PID;
+
+  // Inherit user data
+
+    /* Obtain page tables */
+    page_table_entry *fork_page_table;
+    page_table_entry *parent_page_table;
+
+    fork_page_table = get_PT(fork_task_struct);
+    parent_page_table = get_PT(&parent_task_union->task);
+
+    /* Fill child page table with parent info */
+
+    // Copy system code and data
+    // Use same frames as parent
+    for (int i=0; i<PAG_LOG_INIT_DATA; i++) {
+      set_ss_pag(fork_page_table, i, get_frame(parent_page_table, i));
+    }
+
+    // Find temporal free entry in parent's table
+
+    int temporal_page = -1;
+    int first_page = PAG_LOG_INIT_DATA+NUM_PAG_DATA;
+    for (int i=first_page; i<TOTAL_PAGES; i++) {
+      if (parent_page_table[i].entry == 0) {
+        temporal_page = i; // Free entry found
+        break; // Exit
+      }
+    }
+
+    if (temporal_page == -1) return -1; // Error, no free page table entry found
+
+    void *parent_page_address;
+    void *fork_page_address;
+
+    // New pages for user data+stack, and copy
+    for (int i=0; i<NUM_PAG_DATA; i++) {
+      set_ss_pag(fork_page_table, PAG_LOG_INIT_DATA+i, fork_frames[i]); // Set page->frame
+      set_ss_pag(parent_page_table, temporal_page, fork_frames[i]); // Set temporal page->frame (same frame)
+      /* Now both are associated with the same frame, we can copy */
+
+      //Copy parent data to child     
+      parent_page_address = (void *)((PAG_LOG_INIT_DATA+i)*PAGE_SIZE);
+      fork_page_address = (void *)((temporal_page)*PAGE_SIZE);
+
+      copy_data(parent_page_address, fork_page_address, PAGE_SIZE);
+      // Free temporal entry + flush TLB, parent shouldn't access child pages
+      del_ss_pag(parent_page_table, temporal_page); 
+      set_cr3(get_DIR(&parent_task_union->task));
+    }
+
+  // Assign new PID
+  fork_task_struct->PID = get_new_pid();
+  parent_page_table[temporal_page].entry = 0; // Free page
+
+  // Initialize non-common fields, prepare for task_switch
+  fork_task_struct->kernel_esp = &fork_task_union->stack[KERNEL_STACK_SIZE-19];
+  fork_task_union->stack[KERNEL_STACK_SIZE-19] = 0;
+  fork_task_union->stack[KERNEL_STACK_SIZE-18] = &ret_from_fork;
+
+  // Add to readyqueue
+  list_add_tail(&fork_task_struct->list, &readyqueue);
+
+  // Return PID
+  return fork_task_struct->PID;
+ 
 }
 
 void sys_exit()

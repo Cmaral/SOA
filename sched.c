@@ -27,6 +27,7 @@ extern struct list_head blocked;
 struct list_head freequeue;
 struct list_head readyqueue;
 struct task_struct *idle_task;
+int new_pid;
 
 
 /* get_DIR - Returns the Page Directory address for task 't' */
@@ -106,6 +107,8 @@ void init_task1(void)
     init_task_union = (union task_union *)init_task_struct;
     
     init_task_struct->PID = 1;
+    new_pid = 10;
+
     allocate_DIR(init_task_struct);
     set_user_pages(init_task_struct);
     
@@ -150,4 +153,9 @@ void inner_task_switch(union task_union * new) {
   tss.esp0 = new->task.kernel_esp;
   set_cr3(new->task.dir_pages_baseAddr);
   assem_inner_task_switch(new->task.kernel_esp, &current()->kernel_esp);
+}
+
+int get_new_pid() {
+  new_pid += 1;
+  return new_pid;
 }

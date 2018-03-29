@@ -29,6 +29,10 @@ union task_union {
 extern union task_union protected_tasks[NR_TASKS+2];
 extern union task_union *task; /* Vector de tasques */
 extern struct task_struct *idle_task;
+extern int new_pid;
+
+extern struct list_head freequeue;
+extern struct list_head readyqueue;
 
 
 #define KERNEL_ESP(t)       	(DWord) &(t)->stack[KERNEL_STACK_SIZE]
@@ -53,6 +57,8 @@ int allocate_DIR(struct task_struct *t);
 page_table_entry * get_PT (struct task_struct *t) ;
 
 page_table_entry * get_DIR (struct task_struct *t) ;
+
+int get_new_pid();
 
 /* Headers for the scheduling policy */
 void sched_next_rr();
