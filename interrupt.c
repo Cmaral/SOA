@@ -115,10 +115,11 @@ void kbd_routine() {
 void clock_routine() {
 	zeos_ticks++;
 	zeos_show_clock();
-  union task_union *idle_task_union = (union task_union *)idle_task;
+        schedule();
+  /*union task_union *idle_task_union = (union task_union *)idle_task;
   if (zeos_ticks == 10) {
     task_switch(idle_task_union);
-  }
+  }*/
 }
 
 

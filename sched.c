@@ -28,6 +28,7 @@ struct list_head freequeue;
 struct list_head readyqueue;
 struct task_struct *idle_task;
 int new_pid;
+void task_switch(union task_union * new);
 
 
 /* get_DIR - Returns the Page Directory address for task 't' */
@@ -107,6 +108,8 @@ void init_task1(void)
     init_task_union = (union task_union *)init_task_struct;
     
     init_task_struct->PID = 1;
+    init_task_struct->state = ST_RUN;
+    init_task_struct->quantum = 3;
     new_pid = 10;
 
     allocate_DIR(init_task_struct);
@@ -158,4 +161,70 @@ void inner_task_switch(union task_union * new) {
 int get_new_pid() {
   new_pid += 1;
   return new_pid;
+}
+
+int get_quantum (struct task_struct* t) {
+    return t->quantum;
+}
+
+void set_quantum (struct task_struct* t, int new_quantum) {
+    t->quantum = new_quantum;
+}
+
+void update_sched_data_rr () {
+    current()->quantum--;
+}
+
+int needs_sched_rr() {
+    if (current()->quantum != 0) return 0;
+    return 1;
+}
+
+void update_process_state_rr (struct task_struct* t, struct list_head* dst_queue) {
+    /*if (t->PID != 1) list_del(&t->list);        //PETA AQUI!!!!!!!!!!!!!!!!!!
+    list_add_tail(&t->list, dst_queue);
+    if (dst_queue == NULL) t->state = ST_RUN;
+    else t->state = ST_READY;*/
+}
+
+void sched_next_rr() {
+    struct list_head *next_task_head;
+    next_task_head = list_first(&readyqueue);
+    list_del(next_task_head);
+    
+    struct task_struct *next_task_struct;
+    next_task_struct = list_head_to_task_struct(next_task_head);
+    
+    union task_union *next_task_union;
+    next_task_union = (union task_union *)next_task_struct;
+    
+    update_process_state_rr(&next_task_struct, NULL);
+    
+    /*task_switch(next_task_union);*/
+}
+
+void schedule() {
+    if (current()->PID == 0) {
+        if (list_empty(&readyqueue) == 0) {
+            sched_next_rr();
+        }
+        else return;
+    }
+    else {
+        if (needs_sched_rr()) {
+            if (list_empty(&readyqueue) == 1) {
+                union task_union *idle_task_union;
+                 idle_task_union = (union task_union *)idle_task; //Type cast a task_union
+                 task_switch(idle_task_union);
+            }
+            else {
+                set_quantum(current(), 3);
+                update_process_state_rr(current(), &readyqueue);
+                sched_next_rr();
+            }
+        }
+        else {
+            update_sched_data_rr();
+        }
+    }
 }
