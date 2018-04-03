@@ -131,14 +131,6 @@ void init_sched(){
     INIT_LIST_HEAD(&readyqueue);
 }
 
-/*
-void init_lists(){
-    /NIT_LIST_HEAD(&freequeue);
-    INIT_LIST_HEAD(&readyqueue);
-    list_add_tail(&(task->task.list), &freequeue); //COM INICIALITZAR MOLTES TASKES?
-    
-}
-*/
 
 struct task_struct* current()
 {
@@ -153,9 +145,9 @@ struct task_struct* current()
 
 
 void inner_task_switch(union task_union * new) {
-  tss.esp0 = new->task.kernel_esp;
+  tss.esp0 = &(new->stack[KERNEL_STACK_SIZE]);
   set_cr3(new->task.dir_pages_baseAddr);
-  assem_inner_task_switch(new->task.kernel_esp, &current()->kernel_esp);
+  assem_inner_task_switch(new->task.kernel_esp, &(current()->kernel_esp));
 }
 
 int get_new_pid() {
@@ -181,38 +173,48 @@ int needs_sched_rr() {
 }
 
 void update_process_state_rr (struct task_struct* t, struct list_head* dst_queue) {
-    /*if (t->PID != 1) list_del(&t->list);        //PETA AQUI!!!!!!!!!!!!!!!!!!
-    list_add_tail(&t->list, dst_queue);
-    if (dst_queue == NULL) t->state = ST_RUN;
-    else t->state = ST_READY;*/
+    if (dst_queue == NULL) {
+        
+        
+        list_del(&t->list);        // PETA AQUI
+        
+                printk("HolaSiUpdate2 ");
+        t->state = ST_RUN;
+        
+    }
+    else {
+        
+                printk("HolaSiUpdate1 ");
+        t->state = ST_READY;
+        list_add_tail(&t->list, dst_queue);
+    }
 }
 
 void sched_next_rr() {
     struct list_head *next_task_head;
     next_task_head = list_first(&readyqueue);
     list_del(next_task_head);
-    
+
     struct task_struct *next_task_struct;
     next_task_struct = list_head_to_task_struct(next_task_head);
     
     union task_union *next_task_union;
     next_task_union = (union task_union *)next_task_struct;
-    
     update_process_state_rr(&next_task_struct, NULL);
-    
-    /*task_switch(next_task_union);*/
+    printk("HolaSched ");
+    task_switch(next_task_union);
 }
 
 void schedule() {
     if (current()->PID == 0) {
-        if (list_empty(&readyqueue) == 0) {
+        if (!list_empty(&readyqueue)) {
             sched_next_rr();
         }
         else return;
     }
     else {
         if (needs_sched_rr()) {
-            if (list_empty(&readyqueue) == 1) {
+            if (list_empty(&readyqueue)) {
                 union task_union *idle_task_union;
                  idle_task_union = (union task_union *)idle_task; //Type cast a task_union
                  task_switch(idle_task_union);
@@ -224,6 +226,7 @@ void schedule() {
             }
         }
         else {
+            //printk("HolaNo ");
             update_sched_data_rr();
         }
     }

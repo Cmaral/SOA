@@ -156,6 +156,15 @@ int sys_fork()
 
 void sys_exit()
 {  
+    int task_frames[NUM_PAG_DATA];
+    for (int i=0; i<NUM_PAG_DATA; i++) {
+      free_frame(task_frames[i]);
+    }
+    list_del(&(current()->list));
+    list_add_tail(&(current()->list), &freequeue);
+
+    //schedule();
+
 }
 
 int sys_gettime() {
@@ -180,7 +189,6 @@ int sys_write(int fd, char* buffer, int size) {
     bytes_escrits += sys_write_console(buffer_sys_b, size);
     return bytes_escrits;
 }
-
 
 
 

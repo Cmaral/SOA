@@ -65,3 +65,17 @@ ENTRY(fork)
 fi4:
         pop %ebp
         ret
+
+ENTRY(exit)
+        push %ebp
+        movl %esp, %ebp
+        movl $1, %eax
+        int $0x80
+        cmpl $0, %eax
+        jge fi5
+        imull $-1, %eax
+        movl %eax, errno
+        movl $-1, %eax
+fi5:
+        pop %ebp
+        ret

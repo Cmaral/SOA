@@ -72,3 +72,17 @@ fi3:
 fi4:
         pop %ebp
         ret
+
+.globl exit; .type exit, @function; .align 0; exit:
+        push %ebp
+        movl %esp, %ebp
+        movl $1, %eax
+        int $0x80
+        cmpl $0, %eax
+        jge fi5
+        imull $-1, %eax
+        movl %eax, errno
+        movl $-1, %eax
+fi5:
+        pop %ebp
+        ret
