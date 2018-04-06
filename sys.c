@@ -15,6 +15,8 @@
 
 #include <errno.h>
 
+#include <stats.h>
+
 #define LECTURA 0
 #define ESCRIPTURA 1
 
@@ -188,6 +190,28 @@ int sys_write(int fd, char* buffer, int size) {
     copy_from_user(buffer, buffer_sys_b, size);
     bytes_escrits += sys_write_console(buffer_sys_b, size);
     return bytes_escrits;
+}
+
+int sys_get_stats(int pid, struct stats *st) {
+    struct task_struct *aux_task_struct;
+    int pid_aux;
+    for (int i = 0; i < NR_TASKS; i++) {
+        pid_aux = task[i].task.PID;
+        if (pid == pid_aux) {
+            printk("Entro");
+            aux_task_struct = &(task[i].task);
+            break;
+        }
+        else return -1;
+    }
+    st->user_ticks = aux_task_struct->st.user_ticks;
+    st->system_ticks = aux_task_struct->st.system_ticks;
+    st->blocked_ticks = aux_task_struct->st.blocked_ticks;
+    st->ready_ticks = aux_task_struct->st.ready_ticks;
+    st->elapsed_total_ticks = aux_task_struct->st.elapsed_total_ticks;
+    st->total_trans = aux_task_struct->st.total_trans;
+    st->remaining_ticks = aux_task_struct->st.remaining_ticks;
+    return 0;
 }
 
 

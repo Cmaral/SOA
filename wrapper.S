@@ -79,3 +79,24 @@ ENTRY(exit)
 fi5:
         pop %ebp
         ret
+        
+        
+ENTRY(get_stats)
+        push %ebp
+        movl %esp, %ebp
+        pushl %ebx
+        pushl %ecx
+        movl 8(%ebp), %ebx
+        movl 12(%ebp), %ecx
+        movl $35, %eax
+        int $0x80
+        cmpl $0, %eax
+        jge fi6
+        imull $-1, %eax
+        movl %eax, errno
+        movl $-1, %eax
+fi6:
+        popl %ecx
+        popl %ebx
+        pop %ebp
+        ret

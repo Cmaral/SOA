@@ -91,6 +91,14 @@ void init_idle (void)
     idle_task_union->stack[KERNEL_STACK_SIZE-1]=&cpu_idle; //Apunta a cpu_idle
     idle_task_union->stack[KERNEL_STACK_SIZE-2]=0; //
     idle_task_union->task.kernel_esp = &idle_task_union->stack[KERNEL_STACK_SIZE-2]; //Per retornar
+    
+    idle_task->st.user_ticks = 0;
+    idle_task->st.system_ticks = 0;
+    idle_task->st.blocked_ticks = 0;
+    idle_task->st.ready_ticks = 0;
+    idle_task->st.elapsed_total_ticks = 0;
+    idle_task->st.total_trans = 0;
+    idle_task->st.remaining_ticks = 0;
 
 }
 
@@ -111,6 +119,14 @@ void init_task1(void)
     init_task_struct->state = ST_RUN;
     init_task_struct->quantum = 3;
     new_pid = 10;
+    
+    init_task_struct->st.user_ticks = 0;
+    init_task_struct->st.system_ticks = 0;
+    init_task_struct->st.blocked_ticks = 0;
+    init_task_struct->st.ready_ticks = 0;
+    init_task_struct->st.elapsed_total_ticks = 0;
+    init_task_struct->st.total_trans = 0;
+    init_task_struct->st.remaining_ticks = 0;
 
     allocate_DIR(init_task_struct);
     set_user_pages(init_task_struct);

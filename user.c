@@ -1,4 +1,5 @@
 #include <libc.h>
+#include <stats.h>
 
 int add2(int par1, int par2);
 
@@ -11,6 +12,8 @@ int fork();
 char buff[24];
 
 int pid;
+
+int get_stats(int pid, struct stats *st);
 
 long inner (long n)
 {
@@ -39,8 +42,13 @@ int __attribute__ ((__section__(".text.main")))
 {
     /* Next line, tries to move value 0 to CR3 register. This register is a privileged one, and so it will raise an exception */
      /* __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) ); */
+     
+    struct stats st;
+    int pid = getpid();
+    int err = get_stats(pid, &st);
+    if (err == 0) write(1, "Hola", 4);
    
-   int pid2 = fork();
+   /*int pid2 = fork();
    int pid;
    char* buffer = "";
    while (1) {
@@ -51,7 +59,7 @@ int __attribute__ ((__section__(".text.main")))
         }
    }
    
-   /*pid = getpid();
+   pid = getpid();
    buffer = "";
    itoa(pid, buffer);
    write(1, buffer, strlen(buffer));*/
