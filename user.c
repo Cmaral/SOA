@@ -48,7 +48,7 @@ int __attribute__ ((__section__(".text.main")))
     int err = get_stats(pid, &st);
     if (err == 0) write(1, "get stats correcte  ", 20);
    
-   int pid2 = fork();
+   //int pid2 = fork();
 
    /*
    char* buffer = "";

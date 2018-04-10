@@ -247,3 +247,25 @@ void schedule() {
         }
     }
 }
+
+
+
+void update_stats_user_system(){
+    current()->st.user_ticks += get_ticks() - current()->st.elapsed_total_ticks;
+    current()->st.elapsed_total_ticks = get_ticks();
+}
+
+void update_stats_system_user(){
+    current()->st.system_ticks += get_ticks() - current()->st.elapsed_total_ticks;
+    current()->st.elapsed_total_ticks = get_ticks();
+}
+
+void update_stats_system_ready(){
+    current()->st.system_ticks += get_ticks() - current()->st.elapsed_total_ticks;
+    current()->st.elapsed_total_ticks = get_ticks();
+}
+
+void update_stats_ready_system(){
+    current()->st.ready_ticks += get_ticks() - current()->st.elapsed_total_ticks;
+    current()->st.elapsed_total_ticks = get_ticks();
+}

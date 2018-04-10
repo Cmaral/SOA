@@ -86,6 +86,9 @@ ENTRY(clock_handler)
     
 ENTRY(sys_call_handler)
         SAVE_ALL
+        pushl %eax
+        call update_stats_user_system
+        popl %eax
         cmpl $0, %eax
         jl err
         cmpl $MAX_SYSCALL, %eax
@@ -96,5 +99,6 @@ err:
         movl $-38, %eax
 fin:
         movl %eax, 0x18(%esp)
+        call update_stats_system_user
         RESTORE_ALL
         iret
