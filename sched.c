@@ -248,23 +248,26 @@ void schedule() {
     }
 }
 
-
-
+// usuari -> system
 void update_stats_user_system(){
     current()->st.user_ticks += get_ticks() - current()->st.elapsed_total_ticks;
     current()->st.elapsed_total_ticks = get_ticks();
 }
 
+// system -> usuari
 void update_stats_system_user(){
     current()->st.system_ticks += get_ticks() - current()->st.elapsed_total_ticks;
     current()->st.elapsed_total_ticks = get_ticks();
 }
 
+// system -> ready
+// aquesta es igual que l'anterior, la podriem esborrar i fer servir l'altre?
 void update_stats_system_ready(){
     current()->st.system_ticks += get_ticks() - current()->st.elapsed_total_ticks;
     current()->st.elapsed_total_ticks = get_ticks();
 }
 
+// ready -> system
 void update_stats_ready_system(){
     current()->st.ready_ticks += get_ticks() - current()->st.elapsed_total_ticks;
     current()->st.elapsed_total_ticks = get_ticks();
