@@ -59,11 +59,10 @@ int allocate_DIR(struct task_struct *t)
 void cpu_idle(void)
 {
 	__asm__ __volatile__("sti": : :"memory");
-    int i = 0;
+        
 	while(1)
 	{
-	 if (i == 0) printk("hola");
-     i++;
+	 ;
 	}
 }
 
@@ -166,9 +165,7 @@ struct task_struct* current()
 
 void inner_task_switch(union task_union * new) {
   tss.esp0 = &(new->stack[KERNEL_STACK_SIZE]);
-  printk("tss");
   set_cr3(new->task.dir_pages_baseAddr);
-  printk("cr3");
   assem_inner_task_switch(new->task.kernel_esp, &(current()->kernel_esp));
 }
 
@@ -219,7 +216,6 @@ void sched_next_rr() {
     union task_union *next_task_union;
     next_task_union = (union task_union *)next_task_struct;
     update_process_state_rr(&next_task_struct, NULL);
-    printk("HolaSched ");
     task_switch(next_task_union);
 }
 
@@ -244,7 +240,6 @@ void schedule() {
             }
         }
         else {
-            //printk("HolaNo ");
             update_sched_data_rr();
         }
     }

@@ -44,8 +44,7 @@ int __attribute__ ((__section__(".text.main")))
      /* __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) ); */
      
 
-     write(1,"hola2 ", 6);
-    /*struct stats st;
+    struct stats st;
     int pid = getpid();
     int err = get_stats(pid, &st);
     if (err == 0) write(1, "get stats correcte  ", 20);
@@ -53,10 +52,10 @@ int __attribute__ ((__section__(".text.main")))
     int pid2 = fork();
 
    
-   char* buffer = "";
+   /*char* buffer = "";
    while (1) {
         pid = getpid();
-        if (pid2 == pid) {
+        if (11 == pid) {
             itoa(pid, buffer);
             write(1, buffer, strlen(buffer));
         }
