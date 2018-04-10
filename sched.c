@@ -261,7 +261,7 @@ void update_stats_system_user(){
 }
 
 // system -> ready
-// aquesta es igual que l'anterior, la podriem esborrar i fer servir l'altre?
+// aquesta es igual que l'anterior, la podriem esborrar i fer servir l'altre
 void update_stats_system_ready(){
     current()->st.system_ticks += get_ticks() - current()->st.elapsed_total_ticks;
     current()->st.elapsed_total_ticks = get_ticks();
