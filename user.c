@@ -43,14 +43,16 @@ int __attribute__ ((__section__(".text.main")))
     /* Next line, tries to move value 0 to CR3 register. This register is a privileged one, and so it will raise an exception */
      /* __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) ); */
      
-    struct stats st;
+
+     write(1,"hola2 ", 6);
+    /*struct stats st;
     int pid = getpid();
     int err = get_stats(pid, &st);
     if (err == 0) write(1, "get stats correcte  ", 20);
    
-   //int pid2 = fork();
+    int pid2 = fork();
 
-   /*
+   
    char* buffer = "";
    while (1) {
         pid = getpid();

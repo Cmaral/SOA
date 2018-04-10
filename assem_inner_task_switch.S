@@ -1,10 +1,8 @@
 #include <asm.h>
 
 ENTRY(assem_inner_task_switch)
-	pushl %ebp
-	movl %esp, %ebp
-	movl 12(%ebp), %eax
+	movl 8(%esp), %eax
 	movl %ebp, (%eax)
-	movl 8(%ebp), %esp
+	movl 4(%esp), %esp
 	popl %ebp
 	ret

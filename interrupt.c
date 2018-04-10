@@ -116,10 +116,13 @@ void clock_routine() {
 	zeos_ticks++;
 	zeos_show_clock();
         //schedule();
-  /*union task_union *idle_task_union = (union task_union *)idle_task;
-  if (zeos_ticks == 10) {
+  union task_union *idle_task_union = (union task_union *)idle_task;
+  if (zeos_ticks == 100) {
     task_switch(idle_task_union);
-  }*/
+  }
+  else if (zeos_ticks == 200) {
+    task_switch(init_union);
+  }
 }
 
 

@@ -15,6 +15,7 @@ union task_union protected_tasks[NR_TASKS+2]
 
 union task_union *task = &protected_tasks[1]; /* == union task_union task[NR_TASKS] */
 struct task_struct *idle_task;
+union task_union *init_union;
 
 
 struct task_struct *list_head_to_task_struct(struct list_head *l)
@@ -58,10 +59,11 @@ int allocate_DIR(struct task_struct *t)
 void cpu_idle(void)
 {
 	__asm__ __volatile__("sti": : :"memory");
-
+    int i = 0;
 	while(1)
 	{
-	;
+	 if (i == 0) printk("hola");
+     i++;
 	}
 }
 
@@ -128,6 +130,8 @@ void init_task1(void)
     init_task_struct->st.total_trans = 0;
     init_task_struct->st.remaining_ticks = 0;
 
+    init_union = init_task_union;
+
     allocate_DIR(init_task_struct);
     set_user_pages(init_task_struct);
     
@@ -162,7 +166,9 @@ struct task_struct* current()
 
 void inner_task_switch(union task_union * new) {
   tss.esp0 = &(new->stack[KERNEL_STACK_SIZE]);
+  printk("tss");
   set_cr3(new->task.dir_pages_baseAddr);
+  printk("cr3");
   assem_inner_task_switch(new->task.kernel_esp, &(current()->kernel_esp));
 }
 
@@ -190,17 +196,13 @@ int needs_sched_rr() {
 
 void update_process_state_rr (struct task_struct* t, struct list_head* dst_queue) {
     if (dst_queue == NULL) {
-        
-        
-        list_del(&t->list);        // PETA AQUI
-        
-                printk("HolaSiUpdate2 ");
+               
+        list_del(&t->list);        
         t->state = ST_RUN;
         
     }
     else {
         
-                printk("HolaSiUpdate1 ");
         t->state = ST_READY;
         list_add_tail(&t->list, dst_queue);
     }
