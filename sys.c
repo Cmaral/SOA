@@ -192,26 +192,24 @@ int sys_write(int fd, char* buffer, int size) {
     return bytes_escrits;
 }
 
-int sys_get_stats(int pid, struct stats *st) {
-    struct task_struct *aux_task_struct;
-    int pid_aux;
-    for (int i = 0; i < NR_TASKS; i++) {
-        pid_aux = task[i].task.PID;
-        if (pid == pid_aux) {
-            printk("Entro");
-            aux_task_struct = &(task[i].task);
-            break;
-        }
-        else return -1;
-    }
-    st->user_ticks = aux_task_struct->st.user_ticks;
-    st->system_ticks = aux_task_struct->st.system_ticks;
-    st->blocked_ticks = aux_task_struct->st.blocked_ticks;
-    st->ready_ticks = aux_task_struct->st.ready_ticks;
-    st->elapsed_total_ticks = aux_task_struct->st.elapsed_total_ticks;
-    st->total_trans = aux_task_struct->st.total_trans;
-    st->remaining_ticks = aux_task_struct->st.remaining_ticks;
-    return 0;
+int sys_get_stats(int pid, struct stats *st){
+	
+  // Si el proceso actual ya es el que queremos, cogemos stats directamente
+	if(current()->PID == pid) {
+		copy_to_user(&(current()->st), st, sizeof(struct stats));
+		return 0;
+	}	else {
+    // Miramos PID de los demás procesos hasta encontrar el que queremos
+		for(int i=0; i<NR_TASKS; i++){
+			if(task[i].task.PID == pid){
+        // Copiamos stats del proceso encontrado
+				copy_to_user(&(task[i].task.st), st, sizeof(struct stats));
+				return 0;
+			}
+		}
+	
+	}
+	return -1;
 }
 
 
