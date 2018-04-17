@@ -31,6 +31,7 @@ struct task_struct *idle_task;
 int new_pid;
 int global_quantum=QUANTUM;
 void task_switch(union task_union * new);
+int prova = 0;
 
 
 /* get_DIR - Returns the Page Directory address for task 't' */
@@ -238,7 +239,7 @@ void schedule() {
         else return;
     }
     else {
-        if (needs_sched_rr()) {              
+        if (needs_sched_rr()) {
             if (current()->PID == 11)printk("SOC FILL "); //PROBLEMA AMB QUANTUM FILL
             update_process_state_rr(current(), &readyqueue);                
             set_quantum(current(), QUANTUM);
@@ -247,6 +248,8 @@ void schedule() {
             sched_next_rr();
         }
         else {
+            /*if (current()->PID == 11) prova++;
+            if (prova == 550) printk("S'HA PASSAT");*/
             update_sched_data_rr();
         }
     }
