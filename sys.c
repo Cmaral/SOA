@@ -149,7 +149,7 @@ int sys_fork()
   // Add to readyqueue
   list_add_tail(&fork_task_struct->list, &readyqueue);
   fork_task_struct->state = ST_READY;
-  fork_task_struct->quantum = 100;
+  fork_task_struct->quantum = QUANTUM;
 
   // Return PID
   return fork_task_struct->PID;

@@ -137,7 +137,7 @@ void init_task1(void)
     allocate_DIR(init_task_struct);
     set_user_pages(init_task_struct);
     
-    tss.esp0 = &init_task_union->stack[KERNEL_STACK_SIZE];
+    tss.esp0 = &(init_task_union->stack[KERNEL_STACK_SIZE]);
     set_cr3((init_task_struct->dir_pages_baseAddr));
 }
 
@@ -190,14 +190,13 @@ void update_sched_data_rr () {
 }
 
 int needs_sched_rr() {
-    if ((global_quantum <= 0)&&(!list_empty(&readyqueue))) return 1;
-    if (global_quantum <= 0) global_quantum = get_quantum(current());
+    if (global_quantum <= 0) return 1;
     return 0;
 }
 
 void update_process_state_rr (struct task_struct* t, struct list_head* dst_queue) {
     if (dst_queue == NULL) {
-               
+        global_quantum = get_quantum(t);       
         list_del(&t->list);        
         t->state = ST_RUN;
         
@@ -221,13 +220,13 @@ void sched_next_rr() {
         next_task_struct=idle_task;
         next_task_struct->state = ST_RUN;
         global_quantum = get_quantum(next_task_struct);
+    }
     
     union task_union *next_task_union;
     next_task_union = (union task_union *)next_task_struct;
     
     update_process_state_rr(&next_task_struct, NULL);
     task_switch(next_task_union);
-    }
 }
 
 void schedule() {
@@ -239,18 +238,13 @@ void schedule() {
         else return;
     }
     else {
-        if (needs_sched_rr()) {
-            printk("needs sched");
-            if (list_empty(&readyqueue)) {
-                union task_union *idle_task_union;
-                 idle_task_union = (union task_union *)idle_task; //Type cast a task_union
-                 task_switch(idle_task_union);
-            }
-            else {                
-                update_process_state_rr(current(), &readyqueue);
-                sched_next_rr();
-                set_quantum(current(), QUANTUM);
-            }
+        if (needs_sched_rr()) {              
+            if (current()->PID == 11)printk("SOC FILL "); //PROBLEMA AMB QUANTUM FILL
+            update_process_state_rr(current(), &readyqueue);                
+            set_quantum(current(), QUANTUM);
+            if (current()->PID == 1) printk("SOC PARE ");
+            //else printk("SOC FILL ");
+            sched_next_rr();
         }
         else {
             update_sched_data_rr();
