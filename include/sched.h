@@ -45,7 +45,7 @@ extern struct list_head readyqueue;
 
 #define INITIAL_ESP       	KERNEL_ESP(&task[1])
 
-#define QUANTUM 1000
+#define QUANTUM 500
 
 /* Inicialitza les dades del proces inicial */
 void init_task1(void);
