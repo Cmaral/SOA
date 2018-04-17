@@ -113,9 +113,12 @@ void kbd_routine() {
 }
 
 void clock_routine() {
+  update_stats_user_system();
 	zeos_ticks++;
 	zeos_show_clock();
-        schedule();
+  schedule();
+  update_stats_system_user();
+  
   /*union task_union *idle_task_union = (union task_union *)idle_task;
   if (zeos_ticks == 100) {
     task_switch(idle_task_union);
