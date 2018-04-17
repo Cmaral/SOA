@@ -118,7 +118,7 @@ void clock_routine() {
 	zeos_show_clock();
   schedule();
   update_stats_system_user();
-  
+
   /*union task_union *idle_task_union = (union task_union *)idle_task;
   if (zeos_ticks == 100) {
     task_switch(idle_task_union);

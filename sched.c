@@ -29,6 +29,7 @@ struct list_head freequeue;
 struct list_head readyqueue;
 struct task_struct *idle_task;
 int new_pid;
+int global_quantum=QUANTUM;
 void task_switch(union task_union * new);
 
 
@@ -100,6 +101,7 @@ void init_idle (void)
     idle_task->st.elapsed_total_ticks = 0;
     idle_task->st.total_trans = 0;
     idle_task->st.remaining_ticks = 0;
+    idle_task->quantum = QUANTUM;
 
 }
 
@@ -118,7 +120,7 @@ void init_task1(void)
     
     init_task_struct->PID = 1;
     init_task_struct->state = ST_RUN;
-    init_task_struct->quantum = 3;
+    init_task_struct->quantum = QUANTUM;
     new_pid = 10;
     
     init_task_struct->st.user_ticks = 0;
@@ -128,6 +130,7 @@ void init_task1(void)
     init_task_struct->st.elapsed_total_ticks = 0;
     init_task_struct->st.total_trans = 0;
     init_task_struct->st.remaining_ticks = 0;
+
 
     init_union = init_task_union;
 
@@ -183,12 +186,13 @@ void set_quantum (struct task_struct* t, int new_quantum) {
 }
 
 void update_sched_data_rr () {
-    current()->quantum--;
+    --global_quantum;
 }
 
 int needs_sched_rr() {
-    if (current()->quantum != 0) return 0;
-    return 1;
+    if ((global_quantum <= 0)&&(!list_empty(&readyqueue))) return 1;
+    if (global_quantum <= 0) global_quantum = get_quantum(current());
+    return 0;
 }
 
 void update_process_state_rr (struct task_struct* t, struct list_head* dst_queue) {
@@ -207,19 +211,27 @@ void update_process_state_rr (struct task_struct* t, struct list_head* dst_queue
 
 void sched_next_rr() {
     struct list_head *next_task_head;
-    next_task_head = list_first(&readyqueue);
-    list_del(next_task_head);
-
     struct task_struct *next_task_struct;
-    next_task_struct = list_head_to_task_struct(next_task_head);
+
+    if (!list_empty(&readyqueue)) {
+        next_task_head = list_first(&readyqueue);
+        list_del(next_task_head);
+        next_task_struct = list_head_to_task_struct(next_task_head);
+    } else {
+        next_task_struct=idle_task;
+        next_task_struct->state = ST_RUN;
+        global_quantum = get_quantum(next_task_struct);
     
     union task_union *next_task_union;
     next_task_union = (union task_union *)next_task_struct;
+    
     update_process_state_rr(&next_task_struct, NULL);
     task_switch(next_task_union);
+    }
 }
 
 void schedule() {
+
     if (current()->PID == 0) {
         if (!list_empty(&readyqueue)) {
             sched_next_rr();
@@ -228,15 +240,16 @@ void schedule() {
     }
     else {
         if (needs_sched_rr()) {
+            printk("needs sched");
             if (list_empty(&readyqueue)) {
                 union task_union *idle_task_union;
                  idle_task_union = (union task_union *)idle_task; //Type cast a task_union
                  task_switch(idle_task_union);
             }
-            else {
-                set_quantum(current(), 3);
+            else {                
                 update_process_state_rr(current(), &readyqueue);
                 sched_next_rr();
+                set_quantum(current(), QUANTUM);
             }
         }
         else {

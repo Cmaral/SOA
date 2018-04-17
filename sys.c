@@ -149,7 +149,7 @@ int sys_fork()
   // Add to readyqueue
   list_add_tail(&fork_task_struct->list, &readyqueue);
   fork_task_struct->state = ST_READY;
-  fork_task_struct->quantum = 3;
+  fork_task_struct->quantum = 100;
 
   // Return PID
   return fork_task_struct->PID;
@@ -164,8 +164,8 @@ void sys_exit()
     }
     list_del(&(current()->list));
     list_add_tail(&(current()->list), &freequeue);
-
-    //schedule();
+    current()->PID = -1;
+    schedule();
 
 }
 

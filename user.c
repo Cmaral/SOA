@@ -45,28 +45,12 @@ int __attribute__ ((__section__(".text.main")))
      
 
     struct stats st;
-    int pid = getpid();
-    int err = get_stats(pid, &st);
-    if (err == 0) write(1, "get stats correcte  ", 20);
-   
-    int pid2 = fork();
+    char* buffer = "";
+    buffer = "";
 
-   
-   /*char* buffer = "";
-   while (1) {
-        pid = getpid();
-        if (11 == pid) {
-            itoa(pid, buffer);
-            write(1, buffer, strlen(buffer));
-        }
-   }
-   
-   pid = getpid();
-   buffer = "";
-   itoa(pid, buffer);
-   write(1, buffer, strlen(buffer));
-   */
-   	
+    fork();
+    fork();
+    
    perror();
    while (1);
    return 0;
