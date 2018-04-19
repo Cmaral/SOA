@@ -196,13 +196,7 @@ void set_quantum (struct task_struct* t, int new_quantum) {
 }
 
 void update_sched_data_rr () {
-    
-    if (current()->PID == 11) {
-        if (global_quantum == 0) printk("quantum gran ");
-    }
-
-    global_quantum--;       
-        
+    global_quantum--;               
 }
 
 int needs_sched_rr() {
@@ -220,16 +214,6 @@ void update_process_state_rr (struct task_struct* t, struct list_head* dst_queue
         update_stats_system_ready();
         t->state = ST_READY;
     }
-
-    /*if (dst_queue == NULL) {
-        global_quantum = get_quantum(t);       
-        list_del(&t->list);        
-        t->state = ST_RUN;
-   }
-    else {        
-        t->state = ST_READY;
-        list_add_tail(&t->list, dst_queue);
-    }*/
 }
 
 void sched_next_rr() {
@@ -267,18 +251,14 @@ void schedule() {
         } else return;
     } else {
         if (needs_sched_rr()) {            
-            if (current()->PID == 11)printk("SOC FILL "); //PROBLEMA AMB QUANTUM FILL
-            if (current()->PID == 1) printk("SOC PARE ");
+           // if (current()->PID == 11)printk("SOC FILL "); 
+            // if (current()->PID == 1) printk("SOC PARE ");
             update_process_state_rr(current(), &readyqueue);                
             set_quantum(current(), QUANTUM);
             sched_next_rr();
         }
         else {
-            /*if (current()->PID == 0) printk("idle");
-            if (current()->PID == 1) printk("pare");
-            if (current()->PID == 11) printk("fill");*/
-            update_sched_data_rr();
-            
+            update_sched_data_rr();            
         }
     }
 }
