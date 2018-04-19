@@ -146,11 +146,24 @@ int sys_fork()
   fork_task_union->stack[KERNEL_STACK_SIZE-19] = 0;
   fork_task_union->stack[KERNEL_STACK_SIZE-18] = &ret_from_fork;
 
+  // Stats
+    fork_task_struct->st.user_ticks = 0;
+    fork_task_struct->st.system_ticks = 0;
+    fork_task_struct->st.blocked_ticks = 0;
+    fork_task_struct->st.ready_ticks = 0;
+    fork_task_struct->st.elapsed_total_ticks = get_ticks();
+    fork_task_struct->st.total_trans = 0;
+    fork_task_struct->st.remaining_ticks = 0;
+
+    update_stats_system_user();
+
   // Add to readyqueue
-  list_add_tail(&fork_task_struct->list, &readyqueue);
   fork_task_struct->state = ST_READY;
   fork_task_struct->quantum = QUANTUM;
 
+  list_add_tail(&fork_task_struct->list, &readyqueue);
+  
+  
   // Return PID
   return fork_task_struct->PID;
  

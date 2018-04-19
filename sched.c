@@ -29,9 +29,11 @@ struct list_head freequeue;
 struct list_head readyqueue;
 struct task_struct *idle_task;
 int new_pid;
-int global_quantum=QUANTUM;
 void task_switch(union task_union * new);
 int prova = 0;
+
+
+int global_quantum = 0;
 
 
 /* get_DIR - Returns the Page Directory address for task 't' */
@@ -99,9 +101,9 @@ void init_idle (void)
     idle_task->st.system_ticks = 0;
     idle_task->st.blocked_ticks = 0;
     idle_task->st.ready_ticks = 0;
-    idle_task->st.elapsed_total_ticks = 0;
+    idle_task->st.elapsed_total_ticks = get_ticks();
     idle_task->st.total_trans = 0;
-    idle_task->st.remaining_ticks = 0;
+    idle_task->st.remaining_ticks = QUANTUM;
     idle_task->quantum = QUANTUM;
 
 }
@@ -123,14 +125,6 @@ void init_task1(void)
     init_task_struct->state = ST_RUN;
     init_task_struct->quantum = QUANTUM;
     new_pid = 10;
-    
-    init_task_struct->st.user_ticks = 0;
-    init_task_struct->st.system_ticks = 0;
-    init_task_struct->st.blocked_ticks = 0;
-    init_task_struct->st.ready_ticks = 0;
-    init_task_struct->st.elapsed_total_ticks = 0;
-    init_task_struct->st.total_trans = 0;
-    init_task_struct->st.remaining_ticks = 0;
 
 
     init_union = init_task_union;
@@ -140,6 +134,18 @@ void init_task1(void)
     
     tss.esp0 = &(init_task_union->stack[KERNEL_STACK_SIZE]);
     set_cr3((init_task_struct->dir_pages_baseAddr));
+
+    // Stats
+    init_task_struct->st.user_ticks = 0;
+    init_task_struct->st.system_ticks = 0;
+    init_task_struct->st.blocked_ticks = 0;
+    init_task_struct->st.ready_ticks = 0;
+    init_task_struct->st.elapsed_total_ticks = get_ticks();
+    init_task_struct->st.total_trans = 0;
+    init_task_struct->st.remaining_ticks = QUANTUM;
+
+
+   
 }
 
 void init_sched(){
@@ -149,6 +155,9 @@ void init_sched(){
     for (i=0; i<NR_TASKS;i++){
       list_add(&(task[i].task.list), &freequeue); //Inicialitza freequeue amb tasks
     }
+
+    //Inicialitza quantum global
+    global_quantum = QUANTUM;
 
     //Inicialitza readyqueue
     INIT_LIST_HEAD(&readyqueue);
@@ -174,7 +183,7 @@ void inner_task_switch(union task_union * new) {
 }
 
 int get_new_pid() {
-  new_pid += 1;
+  ++new_pid;
   return new_pid;
 }
 
@@ -187,7 +196,13 @@ void set_quantum (struct task_struct* t, int new_quantum) {
 }
 
 void update_sched_data_rr () {
-    --global_quantum;
+    
+    if (current()->PID == 11) {
+        if (global_quantum == 0) printk("quantum gran ");
+    }
+
+    global_quantum--;       
+        
 }
 
 int needs_sched_rr() {
@@ -196,17 +211,25 @@ int needs_sched_rr() {
 }
 
 void update_process_state_rr (struct task_struct* t, struct list_head* dst_queue) {
+ 
+    
     if (dst_queue == NULL) {
+        t->state = ST_RUN;
+    } else {
+        list_add_tail(&(t->list), dst_queue);
+        update_stats_system_ready();
+        t->state = ST_READY;
+    }
+
+    /*if (dst_queue == NULL) {
         global_quantum = get_quantum(t);       
         list_del(&t->list);        
         t->state = ST_RUN;
-        
-    }
-    else {
-        
+   }
+    else {        
         t->state = ST_READY;
         list_add_tail(&t->list, dst_queue);
-    }
+    }*/
 }
 
 void sched_next_rr() {
@@ -215,14 +238,20 @@ void sched_next_rr() {
 
     if (!list_empty(&readyqueue)) {
         next_task_head = list_first(&readyqueue);
-        list_del(next_task_head);
         next_task_struct = list_head_to_task_struct(next_task_head);
+        list_del(next_task_head);
     } else {
         next_task_struct=idle_task;
-        next_task_struct->state = ST_RUN;
-        global_quantum = get_quantum(next_task_struct);
     }
-    
+
+    next_task_struct->st.ready_ticks += get_ticks()-next_task_struct->st.elapsed_total_ticks;
+    next_task_struct->st.elapsed_total_ticks = get_ticks();
+    next_task_struct->state = ST_RUN;
+    next_task_struct->st.remaining_ticks = get_quantum(next_task_struct);
+    next_task_struct->st.total_trans++;
+
+    global_quantum = get_quantum(next_task_struct);
+
     union task_union *next_task_union;
     next_task_union = (union task_union *)next_task_struct;
     
@@ -232,25 +261,24 @@ void sched_next_rr() {
 
 void schedule() {
 
-    if (current()->PID == 0) {
-        if (!list_empty(&readyqueue)) {
+    if (current()->PID == idle_task->PID) {
+        if (!list_empty(&readyqueue)) { // Idle
             sched_next_rr();
-        }
-        else return;
-    }
-    else {
-        if (needs_sched_rr()) {
+        } else return;
+    } else {
+        if (needs_sched_rr()) {            
             if (current()->PID == 11)printk("SOC FILL "); //PROBLEMA AMB QUANTUM FILL
+            if (current()->PID == 1) printk("SOC PARE ");
             update_process_state_rr(current(), &readyqueue);                
             set_quantum(current(), QUANTUM);
-            if (current()->PID == 1) printk("SOC PARE ");
-            //else printk("SOC FILL ");
             sched_next_rr();
         }
         else {
-            /*if (current()->PID == 11) prova++;
-            if (prova == 550) printk("S'HA PASSAT");*/
+            /*if (current()->PID == 0) printk("idle");
+            if (current()->PID == 1) printk("pare");
+            if (current()->PID == 11) printk("fill");*/
             update_sched_data_rr();
+            
         }
     }
 }
