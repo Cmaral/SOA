@@ -155,8 +155,6 @@ int sys_fork()
     fork_task_struct->st.total_trans = 0;
     fork_task_struct->st.remaining_ticks = 0;
 
-    update_stats_system_user();
-
   // Add to readyqueue
   fork_task_struct->state = ST_READY;
   fork_task_struct->quantum = QUANTUM;

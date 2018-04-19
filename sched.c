@@ -228,13 +228,13 @@ void sched_next_rr() {
         next_task_struct=idle_task;
     }
 
-    next_task_struct->st.ready_ticks += get_ticks()-next_task_struct->st.elapsed_total_ticks;
-    next_task_struct->st.elapsed_total_ticks = get_ticks();
-    next_task_struct->state = ST_RUN;
-    next_task_struct->st.remaining_ticks = get_quantum(next_task_struct);
-    next_task_struct->st.total_trans++;
 
     global_quantum = get_quantum(next_task_struct);
+
+    update_stats_system_ready();
+    update_stats_ready_system();
+
+    next_task_struct->st.total_trans++;
 
     union task_union *next_task_union;
     next_task_union = (union task_union *)next_task_struct;
@@ -250,9 +250,11 @@ void schedule() {
             sched_next_rr();
         } else return;
     } else {
-        if (needs_sched_rr()) {            
-           // if (current()->PID == 11)printk("SOC FILL "); 
-            // if (current()->PID == 1) printk("SOC PARE ");
+        if (needs_sched_rr()) {  
+            /*char c[8];
+            itoa(current()->PID, c);          
+            printk(c); */
+            
             update_process_state_rr(current(), &readyqueue);                
             set_quantum(current(), QUANTUM);
             sched_next_rr();

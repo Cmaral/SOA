@@ -49,16 +49,8 @@ int __attribute__ ((__section__(".text.main")))
     buffer = "";
 
     int pid1 = fork();
-    /*itoa(pid1, buffer);
-    write(1, buffer, strlen(buffer));
-    while (getpid() == 11) {
-      write (1, "hola", 4);
-    }
-    while (pid1 == 11) {
-      write (1, "ADEU", 4);
-    }*/
     
-   perror();
-   while (1);
-   return 0;
+    perror();
+    while (1);
+    return 0;
 }
