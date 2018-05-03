@@ -3,6 +3,7 @@
  */
 
 #include <sched.h>
+#include <schedperf.h>
 #include <mm.h>
 #include <io.h>
 
@@ -149,6 +150,9 @@ void init_task1(void)
 }
 
 void init_sched(){
+	//Initializes the scheduling interface variables
+	init_shced_policy();
+
     //Inicialitza freequeue
     INIT_LIST_HEAD(&freequeue);
     int i;
@@ -243,24 +247,20 @@ void sched_next_rr() {
     task_switch(next_task_union);
 }
 
-void schedule() {
+void schedule() {             //Modificat per fer servir les variables globals de schedule
 
     if (current()->PID == idle_task->PID) {
         if (!list_empty(&readyqueue)) { // Idle
-            sched_next_rr();
+            sched_next();
         } else return;
     } else {
         if (needs_sched_rr()) {  
-            /*char c[8];
-            itoa(current()->PID, c);          
-            printk(c); */
-            
-            update_process_state_rr(current(), &readyqueue);                
+            update_process_state(current(), &readyqueue);                
             set_quantum(current(), QUANTUM);
-            sched_next_rr();
+            sched_next();
         }
         else {
-            update_sched_data_rr();            
+            update_sched_data();            
         }
     }
 }
@@ -288,4 +288,12 @@ void update_stats_system_ready(){
 void update_stats_ready_system(){
     current()->st.ready_ticks += get_ticks() - current()->st.elapsed_total_ticks;
     current()->st.elapsed_total_ticks = get_ticks();
+}
+
+struct stats * get_task_stats(struct task_struct * t) {
+	return &(t->st);
+}
+
+struct list_head * get_task_list(struct task_struct * t) {
+	return &(t->list);
 }
