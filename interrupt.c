@@ -6,6 +6,7 @@
 #include <segment.h>
 #include <hardware.h>
 #include <io.h>
+
 #include <sched.h>
 
 #include <zeos_interrupt.h>
@@ -13,22 +14,14 @@
 Gate idt[IDT_ENTRIES];
 Register    idtR;
 
-int zeos_ticks = 0;
-
-void task_switch(union task_union * new);
-void kbd_handler();
-void clock_handler();
-void sys_call_handler();
-
-
 char char_map[] =
 {
   '\0','\0','1','2','3','4','5','6',
-  '7','8','9','0','\'','ï¿½','\0','\0',
+  '7','8','9','0','\'','¡','\0','\0',
   'q','w','e','r','t','y','u','i',
   'o','p','`','+','\0','\0','a','s',
-  'd','f','g','h','j','k','l','ï¿½',
-  '\0','ï¿½','\0','ï¿½','z','x','c','v',
+  'd','f','g','h','j','k','l','ñ',
+  '\0','º','\0','ç','z','x','c','v',
   'b','n','m',',','.','-','\0','*',
   '\0','\0','\0','\0','\0','\0','\0','\0',
   '\0','\0','\0','\0','\0','\0','\0','7',
@@ -37,6 +30,23 @@ char char_map[] =
   '\0','\0','\0','\0','\0','\0','\0','\0',
   '\0','\0'
 };
+
+int zeos_ticks = 0;
+
+void clock_routine()
+{
+  zeos_show_clock();
+  zeos_ticks ++;
+  
+  schedule();
+}
+
+void keyboard_routine()
+{
+  unsigned char c = inb(0x60);
+  
+  if (c&0x80) printc_xy(0, 0, char_map[c&0x7f]);
+}
 
 void setInterruptHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
 {
@@ -82,6 +92,9 @@ void setTrapHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
   idt[vector].highOffset      = highWord((DWord)handler);
 }
 
+void clock_handler();
+void keyboard_handler();
+void system_call_handler();
 
 void setIdt()
 {
@@ -92,41 +105,10 @@ void setIdt()
   set_handlers();
 
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
-	setInterruptHandler(33, kbd_handler, 0);
-	setInterruptHandler(32, clock_handler, 0);
-        setTrapHandler(0x80, sys_call_handler, 3);
+  setInterruptHandler(32, clock_handler, 0);
+  setInterruptHandler(33, keyboard_handler, 0);
+  setTrapHandler(0x80, system_call_handler, 3);
 
   set_idt_reg(&idtR);
 }
-
-void kbd_routine() {
-
-	char tecla, tecladesp;
-	tecla = inb(0x60);
-	tecladesp = tecla >> 0x07;
-
-	if ((tecladesp&&0x01) == 0) {
-		tecla = char_map[tecla];
-		if (tecla == '\0') printc_xy(0,0,'C');
-		else printc_xy(0,0,tecla);
-	}
-}
-
-void clock_routine() {
-  update_stats_user_system();
-	zeos_ticks++;
-	zeos_show_clock();
-  schedule();
-  update_stats_system_user();
-
-  /*union task_union *idle_task_union = (union task_union *)idle_task;
-  if (zeos_ticks == 100) {
-    task_switch(idle_task_union);
-  }
-  else if (zeos_ticks == 200) {
-    task_switch(init_union);
-  }*/
-}
-
-
 

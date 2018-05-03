@@ -2,10 +2,15 @@
  * sched.c - initializes struct for task 0 anda task 1
  */
 
+#include <types.h>
+#include <hardware.h>
+#include <segment.h>
 #include <sched.h>
 #include <schedperf.h>
 #include <mm.h>
 #include <io.h>
+#include <utils.h>
+#include <p_stats.h>
 
 /**
  * Container for the Task array and 2 additional pages (the first and the last one)
@@ -15,27 +20,31 @@ union task_union protected_tasks[NR_TASKS+2]
   __attribute__((__section__(".data.task")));
 
 union task_union *task = &protected_tasks[1]; /* == union task_union task[NR_TASKS] */
-struct task_struct *idle_task;
-union task_union *init_union;
 
-
+#if 0
 struct task_struct *list_head_to_task_struct(struct list_head *l)
 {
   return list_entry( l, struct task_struct, list);
 }
-
+#endif
 
 extern struct list_head blocked;
+
+// Free task structs
 struct list_head freequeue;
+// Ready queue
 struct list_head readyqueue;
-struct task_struct *idle_task;
-int new_pid;
-void task_switch(union task_union * new);
-int prova = 0;
 
-
-int global_quantum = 0;
-
+void init_stats(struct stats *s)
+{
+	s->user_ticks = 0;
+	s->system_ticks = 0;
+	s->blocked_ticks = 0;
+	s->ready_ticks = 0;
+	s->elapsed_total_ticks = get_ticks();
+	s->total_trans = 0;
+	s->remaining_ticks = get_ticks();
+}
 
 /* get_DIR - Returns the Page Directory address for task 't' */
 page_table_entry * get_DIR (struct task_struct *t) 
@@ -64,236 +73,200 @@ int allocate_DIR(struct task_struct *t)
 void cpu_idle(void)
 {
 	__asm__ __volatile__("sti": : :"memory");
-        
+
 	while(1)
 	{
-	 ;
+	;
 	}
 }
 
+#define DEFAULT_QUANTUM 10
 
+int remaining_quantum=0;
 
-/*Initializes idle process */
-void init_idle (void)
+int get_quantum(struct task_struct *t)
 {
-  
-    struct list_head *idle_task_head;
-    idle_task_head = list_first(&freequeue); //Agafem el primer disponible
-    list_del(idle_task_head); // Eliminem de la freequeue
-    
-    struct task_struct *idle_task_struct;
-    idle_task_struct = list_head_to_task_struct(idle_task_head); //Agafem task_struct
-    
-    union task_union *idle_task_union;
-    idle_task_union = (union task_union *)idle_task_struct; //Type cast a task_union
-    
-    
-    idle_task_struct->PID = 0; //Assignem PID 0
-    allocate_DIR(idle_task_struct); //Alloquem nou directori
-    
-    idle_task = idle_task_struct; //Inicialitzem idle_task
-
-//Per fer el context switch:
-    idle_task_union->stack[KERNEL_STACK_SIZE-1]=&cpu_idle; //Apunta a cpu_idle
-    idle_task_union->stack[KERNEL_STACK_SIZE-2]=0; //
-    idle_task_union->task.kernel_esp = &idle_task_union->stack[KERNEL_STACK_SIZE-2]; //Per retornar
-    
-    idle_task->st.user_ticks = 0;
-    idle_task->st.system_ticks = 0;
-    idle_task->st.blocked_ticks = 0;
-    idle_task->st.ready_ticks = 0;
-    idle_task->st.elapsed_total_ticks = get_ticks();
-    idle_task->st.total_trans = 0;
-    idle_task->st.remaining_ticks = QUANTUM;
-    idle_task->quantum = QUANTUM;
-
+  return t->total_quantum;
 }
 
+void set_quantum(struct task_struct *t, int new_quantum)
+{
+  t->total_quantum=new_quantum;
+}
+
+struct task_struct *idle_task=NULL;
+
+void update_sched_data_rr(void)
+{
+  remaining_quantum--;
+}
+
+int needs_sched_rr(void)
+{
+  if ((remaining_quantum==0)&&(!list_empty(&readyqueue))) return 1;
+  if (remaining_quantum==0) remaining_quantum=get_quantum(current());
+  return 0;
+}
+
+void update_process_state_rr(struct task_struct *t, struct list_head *dst_queue)
+{
+  if (t->state!=ST_RUN) list_del(&(t->list));
+  if (dst_queue!=NULL)
+  {
+    list_add_tail(&(t->list), dst_queue);
+    if (dst_queue!=&readyqueue) t->state=ST_BLOCKED;
+    else
+    {
+      update_stats(&(t->p_stats.system_ticks), &(t->p_stats.elapsed_total_ticks));
+      t->state=ST_READY;
+    }
+  }
+  else t->state=ST_RUN;
+}
+
+void sched_next_rr(void)
+{
+  struct list_head *e;
+  struct task_struct *t;
+
+  if (!list_empty(&readyqueue)) {
+	e = list_first(&readyqueue);
+    list_del(e);
+
+    t=list_head_to_task_struct(e);
+  }
+  else
+    t=idle_task;
+
+  t->state=ST_RUN;
+  remaining_quantum=get_quantum(t);
+
+  update_stats(&(current()->p_stats.system_ticks), &(current()->p_stats.elapsed_total_ticks));
+  update_stats(&(t->p_stats.ready_ticks), &(t->p_stats.elapsed_total_ticks));
+  t->p_stats.total_trans++;
+
+  task_switch((union task_union*)t);
+}
+
+void schedule()
+{
+  update_sched_data();
+  if (needs_sched())
+  {
+    update_process_state(current(), &readyqueue);
+    sched_next();
+  }
+}
+
+void init_idle (void)
+{
+  struct list_head *l = list_first(&freequeue);
+  list_del(l);
+  struct task_struct *c = list_head_to_task_struct(l);
+  union task_union *uc = (union task_union*)c;
+
+  c->PID=0;
+
+  c->total_quantum=DEFAULT_QUANTUM;
+
+  init_stats(&c->p_stats);
+
+  allocate_DIR(c);
+
+  uc->stack[KERNEL_STACK_SIZE-1]=(unsigned long)&cpu_idle; /* Return address */
+  uc->stack[KERNEL_STACK_SIZE-2]=0; /* register ebp */
+
+  c->register_esp=(int)&(uc->stack[KERNEL_STACK_SIZE-2]); /* top of the stack */
+
+  idle_task=c;
+}
 
 void init_task1(void)
 {
-    struct list_head *init_task_head;
-    init_task_head = list_first(&freequeue);
-    list_del(init_task_head);
-    
-    struct task_struct *init_task_struct;
-    init_task_struct = list_head_to_task_struct(init_task_head);
-    
-    union task_union *init_task_union;
-    init_task_union = (union task_union *)init_task_struct;
-    
-    init_task_struct->PID = 1;
-    init_task_struct->state = ST_RUN;
-    init_task_struct->quantum = QUANTUM;
-    new_pid = 10;
+  struct list_head *l = list_first(&freequeue);
+  list_del(l);
+  struct task_struct *c = list_head_to_task_struct(l);
+  union task_union *uc = (union task_union*)c;
 
+  c->PID=1;
 
-    init_union = init_task_union;
+  c->total_quantum=DEFAULT_QUANTUM;
 
-    allocate_DIR(init_task_struct);
-    set_user_pages(init_task_struct);
-    
-    tss.esp0 = &(init_task_union->stack[KERNEL_STACK_SIZE]);
-    set_cr3((init_task_struct->dir_pages_baseAddr));
+  c->state=ST_RUN;
 
-    // Stats
-    init_task_struct->st.user_ticks = 0;
-    init_task_struct->st.system_ticks = 0;
-    init_task_struct->st.blocked_ticks = 0;
-    init_task_struct->st.ready_ticks = 0;
-    init_task_struct->st.elapsed_total_ticks = get_ticks();
-    init_task_struct->st.total_trans = 0;
-    init_task_struct->st.remaining_ticks = QUANTUM;
+  remaining_quantum=c->total_quantum;
 
+  init_stats(&c->p_stats);
 
-   
+  allocate_DIR(c);
+
+  set_user_pages(c);
+
+  tss.esp0=(DWord)&(uc->stack[KERNEL_STACK_SIZE]);
+
+  set_cr3(c->dir_pages_baseAddr);
 }
 
-void init_sched(){
-	//Initializes the scheduling interface variables
-	init_shced_policy();
+void init_freequeue()
+{
+  int i;
 
-    //Inicialitza freequeue
-    INIT_LIST_HEAD(&freequeue);
-    int i;
-    for (i=0; i<NR_TASKS;i++){
-      list_add(&(task[i].task.list), &freequeue); //Inicialitza freequeue amb tasks
-    }
+  INIT_LIST_HEAD(&freequeue);
 
-    //Inicialitza quantum global
-    global_quantum = QUANTUM;
-
-    //Inicialitza readyqueue
-    INIT_LIST_HEAD(&readyqueue);
+  /* Insert all task structs in the freequeue */
+  for (i=0; i<NR_TASKS; i++)
+  {
+    task[i].task.PID=-1;
+    list_add_tail(&(task[i].task.list), &freequeue);
+  }
 }
 
+void init_sched()
+{
+  init_sched_policy();
+  init_freequeue();
+  INIT_LIST_HEAD(&readyqueue);
+}
 
 struct task_struct* current()
 {
   int ret_value;
   
-  __asm__ __volatile__(
-  	"movl %%esp, %0"
-	: "=g" (ret_value)
-  );
-  return (struct task_struct*)(ret_value&0xfffff000);
+  return (struct task_struct*)( ((unsigned int)&ret_value) & 0xfffff000);
+}
+
+struct task_struct* list_head_to_task_struct(struct list_head *l)
+{
+  return (struct task_struct*)((int)l&0xfffff000);
+}
+
+/* Do the magic of a task switch */
+void inner_task_switch(union task_union *new)
+{
+  page_table_entry *new_DIR = get_DIR(&new->task);
+
+  /* Update TSS to make it point to the new stack */
+  tss.esp0=(int)&(new->stack[KERNEL_STACK_SIZE]);
+
+  /* TLB flush. New address space */
+  set_cr3(new_DIR);
+
+  switch_stack(&current()->register_esp, new->task.register_esp);
 }
 
 
-void inner_task_switch(union task_union * new) {
-  tss.esp0 = &(new->stack[KERNEL_STACK_SIZE]);
-  set_cr3(new->task.dir_pages_baseAddr);
-  assem_inner_task_switch(new->task.kernel_esp, &(current()->kernel_esp));
+/* Force a task switch assuming that the scheduler does not work with priorities */
+void force_task_switch()
+{
+  update_process_state_rr(current(), &readyqueue);
+
+  sched_next_rr();
 }
 
-int get_new_pid() {
-  ++new_pid;
-  return new_pid;
+struct stats * get_task_stats( struct task_struct * t) {
+  return &(t->p_stats);
 }
 
-int get_quantum (struct task_struct* t) {
-    return t->quantum;
-}
-
-void set_quantum (struct task_struct* t, int new_quantum) {
-    t->quantum = new_quantum;
-}
-
-void update_sched_data_rr () {
-    global_quantum--;               
-}
-
-int needs_sched_rr() {
-    if (global_quantum <= 0) return 1;
-    return 0;
-}
-
-void update_process_state_rr (struct task_struct* t, struct list_head* dst_queue) {
- 
-    
-    if (dst_queue == NULL) {
-        t->state = ST_RUN;
-    } else {
-        list_add_tail(&(t->list), dst_queue);
-        update_stats_system_ready();
-        t->state = ST_READY;
-    }
-}
-
-void sched_next_rr() {
-    struct list_head *next_task_head;
-    struct task_struct *next_task_struct;
-
-    if (!list_empty(&readyqueue)) {
-        next_task_head = list_first(&readyqueue);
-        next_task_struct = list_head_to_task_struct(next_task_head);
-        list_del(next_task_head);
-    } else {
-        next_task_struct=idle_task;
-    }
-
-
-    global_quantum = get_quantum(next_task_struct);
-
-    update_stats_system_ready();
-    update_stats_ready_system();
-
-    next_task_struct->st.total_trans++;
-
-    union task_union *next_task_union;
-    next_task_union = (union task_union *)next_task_struct;
-    
-    update_process_state_rr(&next_task_struct, NULL);
-    task_switch(next_task_union);
-}
-
-void schedule() {             //Modificat per fer servir les variables globals de schedule
-
-    if (current()->PID == idle_task->PID) {
-        if (!list_empty(&readyqueue)) { // Idle
-            sched_next();
-        } else return;
-    } else {
-        if (needs_sched_rr()) {  
-            update_process_state(current(), &readyqueue);                
-            set_quantum(current(), QUANTUM);
-            sched_next();
-        }
-        else {
-            update_sched_data();            
-        }
-    }
-}
-
-// usuari -> system
-void update_stats_user_system(){
-    current()->st.user_ticks += get_ticks() - current()->st.elapsed_total_ticks;
-    current()->st.elapsed_total_ticks = get_ticks();
-}
-
-// system -> usuari
-void update_stats_system_user(){
-    current()->st.system_ticks += get_ticks() - current()->st.elapsed_total_ticks;
-    current()->st.elapsed_total_ticks = get_ticks();
-}
-
-// system -> ready
-// aquesta es igual que l'anterior, la podriem esborrar i fer servir l'altre
-void update_stats_system_ready(){
-    current()->st.system_ticks += get_ticks() - current()->st.elapsed_total_ticks;
-    current()->st.elapsed_total_ticks = get_ticks();
-}
-
-// ready -> system
-void update_stats_ready_system(){
-    current()->st.ready_ticks += get_ticks() - current()->st.elapsed_total_ticks;
-    current()->st.elapsed_total_ticks = get_ticks();
-}
-
-struct stats * get_task_stats(struct task_struct * t) {
-	return &(t->st);
-}
-
-struct list_head * get_task_list(struct task_struct * t) {
-	return &(t->list);
+struct list_head * get_task_list( struct task_struct * t) {
+  return &(t->list);
 }
