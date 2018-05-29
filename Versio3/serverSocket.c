@@ -2,8 +2,6 @@
 #include <string.h>
 #include <stdio.h>
 
-int childs = 0;
-
 
 doService(int fd) {
 int i = 0;
@@ -37,6 +35,7 @@ doServiceFork(int fd) {
 	int pid = fork();
 	if (pid == 0) {
 		doService(fd);
+		exit(0);
 	}
 }
 
@@ -48,6 +47,7 @@ main (int argc, char *argv[])
   char buffer[80];
   int ret;
   int port;
+  int childs = 0;
 
 
   if (argc != 2)
@@ -66,6 +66,7 @@ main (int argc, char *argv[])
     }
 
   while (1) {
+
 	  connectionFD = acceptNewConnections (socketFD);
 	  if (connectionFD < 0)
 	  {
@@ -74,14 +75,14 @@ main (int argc, char *argv[])
 		  exit (1);
 	  }
 
-	  if (childs <= 2) {
-              doServiceFork(connectionFD);
-              childs++;
-          }
-          else {
-                waitpid(-1, NULL, 0);
-                childs--;
-          }
+	  if (childs < 2) {
+            doServiceFork(connectionFD);
+            childs++;
+      }
+      if (childs >= 2) {
+            waitpid(-1, NULL, 0);
+            childs--;
+      }
   }
 
 }
